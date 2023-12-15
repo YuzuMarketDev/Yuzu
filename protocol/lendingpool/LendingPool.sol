@@ -50,6 +50,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
   using SafeERC20 for IERC20;
 
   uint256 public constant LENDINGPOOL_REVISION = 0x2;
+  string private _signature;
 
   modifier whenNotPaused() {
     _whenNotPaused();
@@ -58,6 +59,11 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
 
   modifier onlyLendingPoolConfigurator() {
     _onlyLendingPoolConfigurator();
+    _;
+  }
+
+  modifier onlyUiSigner {
+    require(_addressesProvider.getUiSigner() == msg.sender, "Not UI Signer.");
     _;
   }
 
@@ -74,6 +80,14 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
 
   function getRevision() internal pure override returns (uint256) {
     return LENDINGPOOL_REVISION;
+  }
+
+  function setSignature(string calldata signature) external onlyUiSigner {
+    _signature = signature;
+  }
+
+  function getSignature() external view returns (string memory) {
+    return _signature;
   }
 
   /**

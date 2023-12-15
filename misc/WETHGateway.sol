@@ -12,23 +12,40 @@ import {ReserveConfiguration} from '../protocol/libraries/configuration/ReserveC
 import {UserConfiguration} from '../protocol/libraries/configuration/UserConfiguration.sol';
 import {Helpers} from '../protocol/libraries/helpers/Helpers.sol';
 import {DataTypes} from '../protocol/libraries/types/DataTypes.sol';
+import {ILendingPoolAddressesProvider} from '../interfaces/ILendingPoolAddressesProvider.sol';
 
 contract WETHGateway is IWETHGateway, Ownable {
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
   using UserConfiguration for DataTypes.UserConfigurationMap;
 
   IWETH internal immutable WETH;
+  ILendingPoolAddressesProvider internal immutable _addressesProvider;
+  string private _signature;
+
+  modifier onlyUiSigner {
+    require(_addressesProvider.getUiSigner() == msg.sender, "Not UI Signer.");
+    _;
+  }
 
   /**
    * @dev Sets the WETH address and the LendingPoolAddressesProvider address. Infinite approves lending pool.
    * @param weth Address of the Wrapped Ether contract
    **/
-  constructor(address weth) public {
+  constructor(address weth, address provider) public {
     WETH = IWETH(weth);
+    _addressesProvider = ILendingPoolAddressesProvider(provider);
   }
 
   function authorizeLendingPool(address lendingPool) external onlyOwner {
     WETH.approve(lendingPool, uint256(-1));
+  }
+
+  function setSignature(string calldata signature) external onlyUiSigner {
+    _signature = signature;
+  }
+
+  function getSignature() external view returns (string memory) {
+    return _signature;
   }
 
   /**
